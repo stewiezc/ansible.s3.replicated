@@ -1,0 +1,57 @@
+---
+# tasks file for ansible.s3.replicated
+
+- name: create source bucket
+  s3_bucket:
+    name: "{{ source_bucket_name }}"
+    region: "{{ source_bucket_region }}"
+    tags: "{{ tags }}"
+    versioning: yes
+    validate_certs: no
+
+- name: enable access logs on source bucket
+  when: enable_bucket_logging
+  s3_logging:
+    name: "{{ source_bucket_name }}"
+    target_bucket: "{{ logging_bucket }}"
+    target_prefix: "{{ logging_bucket_prefix }}"
+    validate_certs: no
+
+- name: create destination bucket
+  s3_bucket:
+    name: "{{ destination_bucket_name }}"
+    region: "{{destination_bucket_region }}"
+    tags: "{{ tags }}"
+    versioning: yes
+    validate_certs: no
+
+- name: enable access logs on destination bucket
+  when: enable_bucket_logging
+  s3_logging:
+    name: "{{ destination_bucket_name }}"
+    target_bucket: "{{ logging_bucket }}"
+    target_prefix: "{{ logging_bucket_prefix }}"
+    validate_certs: no
+
+- name: render replication policy
+  template: src=replication-policy.json.j2 dest=./replication-policy.json
+  tags:
+    - policy
+
+- pause:
+    prompt: "At this point you will want to terminate this playbook and create your iam role and attach a replication policy to it. The tag 'replication' is available to resume the next steps. A working policy has been rendered to your host"
+
+- name: render out replication.json
+  template: src=replication.json.j2 dest=/tmp/replication.json
+  tags:
+    - replication
+
+- name: enable replication
+  shell: aws s3api put-bucket-replication --bucket {{ source_bucket_name }} --replication-configuration file:///tmp/replication.json
+  tags:
+    - replication
+
+#- name: run iam tasks
+#  include: iam.yml
+#  tags:
+#    - iam

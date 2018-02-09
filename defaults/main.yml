@@ -1,0 +1,18 @@
+---
+# defaults file for ansible.s3.replicated
+iam_role_name: "{{ appname }}-s3-replication-role"
+iam_policy_name: "{{ appname }}-s3-replication-policy"
+iam_role_arn: arn:aws:iam::{{ account_number }}:role/acct-managed/{{ iam_role_name }}
+
+enable_bucket_logging: false
+logging_bucket: "{{ account_name }}.logs"
+
+source_bucket_region: us-east-1
+destination_bucket_region: us-west-2
+
+tags:
+  app: "{{ appname }}"
+  env: "{{ env }}"
+  buildtype: Ansible
+  owner: "{{ owner }}"
+  tier: data
